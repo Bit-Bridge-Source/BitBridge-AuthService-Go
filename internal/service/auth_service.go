@@ -8,61 +8,78 @@ import (
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
 	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 	"github.com/Bit-Bridge-Source/BitBridge-UserService-Go/proto/pb"
-	"github.com/golang-jwt/jwt"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 type IAuthService interface {
 	Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error)
 	Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error)
-	CreateTokenPair(ctx context.Context, userID string) (*public_model.TokenModel, error)
-	CreateToken(ctx context.Context, userID string, expiration int64) (string, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error)
 }
 
 type AuthService struct {
-	JWTSecret     []byte
-	Crypto        common_crypto.ICrypto
-	GrpcConnector grpc_connector.IGrpcConnector
+	TokenService             ITokenService
+	Crypto                   common_crypto.ICrypto
+	GrpcConnector            grpc_connector.IGrpcConnector
+	UserServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient
 }
 
-func NewAuthService(jwtSecret []byte, crypto common_crypto.ICrypto, grpcConnector grpc_connector.IGrpcConnector) *AuthService {
+func NewAuthService(
+	tokenService ITokenService,
+	crypto common_crypto.ICrypto,
+	grpcConnector grpc_connector.IGrpcConnector,
+	userServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient,
+) *AuthService {
 	return &AuthService{
-		JWTSecret:     jwtSecret,
-		Crypto:        crypto,
-		GrpcConnector: grpcConnector,
+		TokenService:             tokenService,
+		Crypto:                   crypto,
+		GrpcConnector:            grpcConnector,
+		UserServiceClientCreator: userServiceClientCreator,
 	}
 }
 
-func (authService *AuthService) Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error) {
-	token, err := authService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
-	if err != nil {
-		return nil, err
-	}
-
+// Separate the logic for creating a gRPC client to make it more testable.
+func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
 	connection, err := authService.GrpcConnector.Connect("localhost:50051")
 	if err != nil {
 		return nil, err
 	}
-	defer connection.Close()
+	return authService.UserServiceClientCreator(connection), nil
+}
 
-	client := pb.NewUserServiceClient(connection)
-
+// Separate out the user creation logic to a new function
+func (authService *AuthService) createUser(ctx context.Context, client pb.UserServiceClient, registerModel public_model.RegisterModel, token string) (string, error) {
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
-
 	userCreate := &pb.CreateUserRequest{
 		Email:    registerModel.Email,
 		Username: registerModel.Username,
 		Password: registerModel.Password,
 	}
-
 	resp, err := client.CreateUser(ctx, userCreate)
+	if err != nil {
+		return "", err
+	}
+	return resp.GetId(), nil
+}
+
+func (authService *AuthService) Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error) {
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
 	if err != nil {
 		return nil, err
 	}
 
-	tokenModel, err := authService.CreateTokenPair(ctx, resp.GetId())
+	client, err := authService.getGRPCClient()
+	if err != nil {
+		return nil, err
+	}
+
+	userID, err := authService.createUser(ctx, client, registerModel, token)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenModel, err := authService.TokenService.CreateTokenPair(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,22 +88,23 @@ func (authService *AuthService) Register(ctx context.Context, registerModel publ
 }
 
 func (authService *AuthService) Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error) {
-	token, err := authService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
+	// Create a token
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
 	if err != nil {
 		return nil, err
 	}
 
-	connection, err := authService.GrpcConnector.Connect("localhost:50051")
+	// Create a gRPC client
+	client, err := authService.getGRPCClient()
 	if err != nil {
 		return nil, err
 	}
-	defer connection.Close()
 
-	client := pb.NewUserServiceClient(connection)
-
+	// Set the token in the metadata
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
+	// Make a gRPC call to retrieve the user
 	identifierRequest := &pb.IdentifierRequest{
 		UserIdentifier: loginModel.Email,
 	}
@@ -96,70 +114,14 @@ func (authService *AuthService) Login(ctx context.Context, loginModel public_mod
 		return nil, err
 	}
 
+	// Compare the password
 	err = authService.Crypto.CompareHashAndPassword(user.GetHash(), loginModel.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenModel, err := authService.CreateTokenPair(ctx, user.GetId())
-	if err != nil {
-		return nil, err
-	}
-
-	return tokenModel, nil
-}
-
-func (authService *AuthService) CreateToken(ctx context.Context, userID string, expiration int64) (string, error) {
-	claims := public_model.CustomClaims{
-		UserID: userID,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expiration,
-		},
-	}
-
-	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := unsignedToken.SignedString(authService.JWTSecret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-func (authService *AuthService) CreateTokenPair(ctx context.Context, userID string) (*public_model.TokenModel, error) {
-	accessToken, err := authService.CreateToken(ctx, userID, time.Now().Add(time.Minute*15).Unix())
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := authService.CreateToken(ctx, userID, time.Now().Add(time.Hour*24*7).Unix())
-	if err != nil {
-		return nil, err
-	}
-
-	tokenModel := &public_model.TokenModel{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-
-	return tokenModel, nil
-}
-
-func (authService *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error) {
-	claims := &public_model.CustomClaims{}
-
-	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return authService.JWTSecret, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !token.Valid {
-		return nil, err
-	}
-
-	tokenModel, err := authService.CreateTokenPair(ctx, claims.UserID)
+	// Create a token pair
+	tokenModel, err := authService.TokenService.CreateTokenPair(ctx, user.GetId())
 	if err != nil {
 		return nil, err
 	}
