@@ -13,8 +13,8 @@ import (
 )
 
 type IAuthService interface {
-	Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error)
-	Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error)
+	Register(ctx context.Context, registerModel *public_model.RegisterModel) (*public_model.TokenModel, error)
+	Login(ctx context.Context, loginModel *public_model.LoginModel) (*public_model.TokenModel, error)
 }
 
 type AuthService struct {
