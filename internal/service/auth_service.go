@@ -64,7 +64,7 @@ func (authService *AuthService) createUser(ctx context.Context, client pb.UserSe
 }
 
 func (authService *AuthService) Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error) {
-	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (authService *AuthService) Register(ctx context.Context, registerModel publ
 
 func (authService *AuthService) Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error) {
 	// Create a token
-	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Now().Add(time.Minute*15).Unix())
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
 		return nil, err
 	}

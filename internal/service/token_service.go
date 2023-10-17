@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
@@ -9,23 +10,39 @@ import (
 )
 
 type ITokenService interface {
-	CreateToken(ctx context.Context, userID string, expiration int64) (string, error)
+	CreateToken(ctx context.Context, userID string, duration time.Duration) (string, error)
 	CreateTokenPair(ctx context.Context, userID string) (*public_model.TokenModel, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error)
 }
 
-type TokenService struct {
-	JWTSecret []byte
+type TimeSource interface {
+	Now() time.Time
 }
 
-func NewTokenService(jwtSecret []byte) *TokenService {
+type JWTHandler interface {
+	Generate(claims jwt.Claims) (string, error)
+	Parse(tokenString string, claims jwt.Claims) (*jwt.Token, error)
+}
+
+type TokenService struct {
+	JWTSecret []byte
+	Time      TimeSource
+	JWT       JWTHandler
+}
+
+// NewTokenService creates a new TokenService.
+func NewTokenService(jwtSecret []byte, time TimeSource, jwt JWTHandler) *TokenService {
 	return &TokenService{
 		JWTSecret: jwtSecret,
+		Time:      time,
+		JWT:       jwt,
 	}
 }
 
 // CreateToken implements ITokenService.
-func (t *TokenService) CreateToken(ctx context.Context, userID string, expiration int64) (string, error) {
+func (t *TokenService) CreateToken(ctx context.Context, userID string, duration time.Duration) (string, error) {
+	expiration := t.Time.Now().Add(duration).Unix()
+
 	claims := public_model.CustomClaims{
 		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
@@ -33,8 +50,7 @@ func (t *TokenService) CreateToken(ctx context.Context, userID string, expiratio
 		},
 	}
 
-	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := unsignedToken.SignedString(t.JWTSecret)
+	tokenString, err := t.JWT.Generate(claims)
 	if err != nil {
 		return "", err
 	}
@@ -44,12 +60,12 @@ func (t *TokenService) CreateToken(ctx context.Context, userID string, expiratio
 
 // CreateTokenPair implements ITokenService.
 func (t *TokenService) CreateTokenPair(ctx context.Context, userID string) (*public_model.TokenModel, error) {
-	accessToken, err := t.CreateToken(ctx, userID, time.Now().Add(time.Minute*15).Unix())
+	accessToken, err := t.CreateToken(ctx, userID, 15*time.Minute)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := t.CreateToken(ctx, userID, time.Now().Add(time.Hour*24*7).Unix())
+	refreshToken, err := t.CreateToken(ctx, userID, 24*7*time.Hour)
 	if err != nil {
 		return nil, err
 	}
@@ -66,15 +82,13 @@ func (t *TokenService) CreateTokenPair(ctx context.Context, userID string) (*pub
 func (t *TokenService) RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error) {
 	claims := &public_model.CustomClaims{}
 
-	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return t.JWTSecret, nil
-	})
+	token, err := t.JWT.Parse(refreshToken, claims)
 	if err != nil {
 		return nil, err
 	}
 
 	if !token.Valid {
-		return nil, err
+		return nil, errors.New("invalid token")
 	}
 
 	tokenModel, err := t.CreateTokenPair(ctx, claims.UserID)

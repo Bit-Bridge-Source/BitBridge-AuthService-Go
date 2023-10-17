@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
 	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 	"github.com/Bit-Bridge-Source/BitBridge-UserService-Go/proto/pb"
+	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
@@ -20,19 +22,21 @@ type MockTokenService struct {
 	mock.Mock
 }
 
-// RefreshToken implements service.ITokenService.
-func (m *MockTokenService) RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error) {
-	args := m.Called(ctx, refreshToken)
-	return args.Get(0).(*public_model.TokenModel), args.Error(1)
-}
-
-func (m *MockTokenService) CreateToken(ctx context.Context, userID string, expiration int64) (string, error) {
-	args := m.Called(ctx, userID, expiration)
+// CreateToken mock
+func (m *MockTokenService) CreateToken(ctx context.Context, userID string, duration time.Duration) (string, error) {
+	args := m.Called(ctx, userID, duration)
 	return args.String(0), args.Error(1)
 }
 
+// CreateTokenPair mock
 func (m *MockTokenService) CreateTokenPair(ctx context.Context, userID string) (*public_model.TokenModel, error) {
 	args := m.Called(ctx, userID)
+	return args.Get(0).(*public_model.TokenModel), args.Error(1)
+}
+
+// RefreshToken mock
+func (m *MockTokenService) RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error) {
+	args := m.Called(ctx, refreshToken)
 	return args.Get(0).(*public_model.TokenModel), args.Error(1)
 }
 
@@ -488,4 +492,29 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 	mockAuthService.AssertExpectations(t)
+}
+
+func TestRefreshToken_Success_(t *testing.T) {
+	mockJWTHandler := new(MockJWTHandler)
+	mockTimeSource := &MockTimeSource{}
+	svc := service.NewTokenService([]byte("secret"), mockTimeSource, mockJWTHandler)
+
+	// Mock Parse method since RefreshToken will call it
+	mockJWTHandler.On("Parse", "someValidRefreshToken", mock.Anything).Return(&jwt.Token{Valid: true}, nil)
+
+	// Mock Generate method twice, because RefreshToken will call CreateTokenPair -> CreateToken twice
+	mockJWTHandler.On("Generate", mock.Anything).Return("newAccessToken", nil).Once()
+	mockJWTHandler.On("Generate", mock.Anything).Return("newRefreshToken", nil).Once()
+
+	tokenModel, err := svc.RefreshToken(context.TODO(), "someValidRefreshToken")
+
+	assert.NoError(t, err)
+
+	expectedTokenModel := &public_model.TokenModel{
+		AccessToken:  "newAccessToken",
+		RefreshToken: "newRefreshToken",
+	}
+
+	assert.Equal(t, expectedTokenModel, tokenModel)
+	mockJWTHandler.AssertExpectations(t)
 }
