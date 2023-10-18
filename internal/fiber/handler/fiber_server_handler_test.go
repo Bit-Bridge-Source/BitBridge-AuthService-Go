@@ -1,10 +1,10 @@
-package fiberserver_test
+package fiber_handler_test
 
 import (
 	"context"
 	"testing"
 
-	fiberserver "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber"
+	fiberserver "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/handler"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/stretchr/testify/assert"

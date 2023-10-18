@@ -1,4 +1,4 @@
-package fiberserver
+package fiber_handler
 
 import (
 	"context"
