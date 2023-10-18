@@ -2,7 +2,6 @@ package grpcserver
 
 import (
 	"context"
-	"log"
 	"net"
 
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
@@ -14,26 +13,43 @@ import (
 type IAuthGRPCServer interface {
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error)
-	Run(port string) error
+	Run() error
+	InitServer(port string, listener Listener) error
+}
+
+type ServerConfig struct {
+	Listener   net.Listener
+	GRPCServer *grpc.Server
+}
+
+type Listener interface {
+	Listen(network, address string) (net.Listener, error)
 }
 
 type AuthGRPCServer struct {
 	AuthService service.IAuthService
 	Middleware  grpc.UnaryServerInterceptor
+	Config      ServerConfig
 	pb.UnimplementedAuthServiceServer
 }
 
-func (s *AuthGRPCServer) Run(port string) error {
-	lis, err := net.Listen("tcp", port)
+// Initialize server but do not serve yet
+func (s *AuthGRPCServer) InitServer(port string, listener Listener) error {
+	lis, err := listener.Listen("tcp", port)
 	if err != nil {
-		log.Fatalf("failed to listen: %s", err.Error())
 		return err
 	}
-	grpcServer := grpc.NewServer(
+	s.Config.Listener = lis
+	s.Config.GRPCServer = grpc.NewServer(
 		grpc.UnaryInterceptor(s.Middleware),
 	)
-	pb.RegisterAuthServiceServer(grpcServer, s)
-	return grpcServer.Serve(lis)
+	pb.RegisterAuthServiceServer(s.Config.GRPCServer, s)
+	return nil
+}
+
+// Start serving
+func (s *AuthGRPCServer) Run() error {
+	return s.Config.GRPCServer.Serve(s.Config.Listener)
 }
 
 func (s *AuthGRPCServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
@@ -60,14 +76,14 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *pb.RegisterRequest) 
 		Password: req.GetPassword(),
 	}
 
-	user, err := s.AuthService.Register(ctx, registerModel)
+	token, err := s.AuthService.Register(ctx, registerModel)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.RegisterResponse{
-		AccessToken:  user.AccessToken,
-		RefreshToken: user.RefreshToken,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
 	}, nil
 }
 
