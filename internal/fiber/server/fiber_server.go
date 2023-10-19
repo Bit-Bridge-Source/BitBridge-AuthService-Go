@@ -21,4 +21,15 @@ func (f *FiberServer) SetupRoutes(handler fiber_handler.FiberServerHandler) {
 		}
 		return handler.Login(fiberCtx)
 	})
+
+	f.app.Post("/register", func(c *fiber.Ctx) error {
+		fiberCtx := &fiber_util.FiberContextImpl{
+			Ctx: c,
+		}
+		return handler.Register(fiberCtx)
+	})
+}
+
+func (f *FiberServer) Run(port string) error {
+	return f.app.Listen(port)
 }
