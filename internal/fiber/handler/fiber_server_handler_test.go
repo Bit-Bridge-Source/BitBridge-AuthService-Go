@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	fiberserver "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/handler"
+	fiber_handler "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/handler"
+	fiber_util "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/util"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,7 @@ func (m *MockFiberContext) JSON(v interface{}) error {
 }
 
 // Ensure that MockFiberContext implements FiberContext
-var _ fiberserver.FiberContext = &MockFiberContext{}
+var _ fiber_util.FiberContext = &MockFiberContext{}
 
 type MockFiberCtx struct {
 	mock.Mock
@@ -84,7 +85,7 @@ func TestLogin_Success(t *testing.T) {
 	mockFiberContext.On("JSON", mock.Anything).Return(nil)
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return(&public_model.TokenModel{}, nil)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Login(mockFiberContext)
@@ -105,7 +106,7 @@ func TestLogin_Error_BadRequest(t *testing.T) {
 	mockFiberContext.On("Context").Return(context.Background())
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), assert.AnError)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Login(mockFiberContext)
@@ -124,7 +125,7 @@ func TestLogin_Error_BodyParser(t *testing.T) {
 
 	mockFiberContext.On("BodyParser", mock.Anything).Return(assert.AnError)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Login(mockFiberContext)
@@ -145,7 +146,7 @@ func TestRegister_Success(t *testing.T) {
 	mockFiberContext.On("JSON", mock.Anything).Return(nil)
 	mockAuthService.On("Register", mock.Anything, mock.Anything).Return(&public_model.TokenModel{}, nil)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Register(mockFiberContext)
@@ -166,7 +167,7 @@ func TestRegister_Error_BadRequest(t *testing.T) {
 	mockFiberContext.On("Context").Return(context.Background())
 	mockAuthService.On("Register", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), assert.AnError)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Register(mockFiberContext)
@@ -185,7 +186,7 @@ func TestRegister_Error_BodyParser(t *testing.T) {
 
 	mockFiberContext.On("BodyParser", mock.Anything).Return(assert.AnError)
 
-	handler := fiberserver.NewFiberServerHandler(mockAuthService)
+	handler := fiber_handler.NewFiberServerHandler(mockAuthService)
 
 	// Act
 	err := handler.Register(mockFiberContext)
@@ -194,40 +195,4 @@ func TestRegister_Error_BodyParser(t *testing.T) {
 	assert.NotNil(t, err)
 
 	mockFiberContext.AssertExpectations(t)
-}
-
-func TestFiberContextImpl_BodyParser(t *testing.T) {
-	mockFiberCtx := new(MockFiberCtx)
-	mockFiberCtx.On("BodyParser", mock.Anything).Return(nil)
-
-	fiberContextImpl := &fiberserver.FiberContextImpl{Ctx: mockFiberCtx}
-
-	err := fiberContextImpl.BodyParser(&public_model.LoginModel{})
-
-	assert.Nil(t, err)
-	mockFiberCtx.AssertExpectations(t)
-}
-
-func TestFiberContextImpl_JSON(t *testing.T) {
-	mockFiberCtx := new(MockFiberCtx)
-	mockFiberCtx.On("JSON", mock.Anything).Return(nil)
-
-	fiberContextImpl := &fiberserver.FiberContextImpl{Ctx: mockFiberCtx}
-
-	err := fiberContextImpl.JSON(&public_model.LoginModel{})
-
-	assert.Nil(t, err)
-	mockFiberCtx.AssertExpectations(t)
-}
-
-func TestFiberContextImpl_Context(t *testing.T) {
-	mockFiberCtx := new(MockFiberCtx)
-	mockFiberCtx.On("Context").Return(context.Background())
-
-	fiberContextImpl := &fiberserver.FiberContextImpl{Ctx: mockFiberCtx}
-
-	ctx := fiberContextImpl.Context()
-
-	assert.NotNil(t, ctx)
-	mockFiberCtx.AssertExpectations(t)
 }
