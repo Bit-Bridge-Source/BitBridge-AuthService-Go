@@ -12,18 +12,21 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// IAuthService defines methods for user authentication services.
 type IAuthService interface {
 	Register(ctx context.Context, registerModel *public_model.RegisterModel) (*public_model.TokenModel, error)
 	Login(ctx context.Context, loginModel *public_model.LoginModel) (*public_model.TokenModel, error)
 }
 
+// AuthService is the struct containing services and configurations for authentication.
 type AuthService struct {
-	TokenService             ITokenService
-	Crypto                   common_crypto.ICrypto
-	GrpcConnector            grpc_connector.IGrpcConnector
-	UserServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient
+	TokenService             ITokenService                                    // Handles token creation and validation
+	Crypto                   common_crypto.ICrypto                            // Handles cryptographic operations
+	GrpcConnector            grpc_connector.IGrpcConnector                    // Helps in connecting to other gRPC services
+	UserServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient // Factory function to create a new UserService client
 }
 
+// NewAuthService is a constructor for creating an instance of AuthService with necessary dependencies.
 func NewAuthService(
 	tokenService ITokenService,
 	crypto common_crypto.ICrypto,
@@ -38,7 +41,7 @@ func NewAuthService(
 	}
 }
 
-// Separate the logic for creating a gRPC client to make it more testable.
+// getGRPCClient creates and returns a new UserServiceClient for interacting with the user service.
 func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
 	connection, err := authService.GrpcConnector.Connect("localhost:50051")
 	if err != nil {
@@ -47,7 +50,7 @@ func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
 	return authService.UserServiceClientCreator(connection), nil
 }
 
-// Separate out the user creation logic to a new function
+// createUser creates a new user by communicating with the user service.
 func (authService *AuthService) createUser(ctx context.Context, client pb.UserServiceClient, registerModel public_model.RegisterModel, token string) (string, error) {
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
@@ -63,6 +66,7 @@ func (authService *AuthService) createUser(ctx context.Context, client pb.UserSe
 	return resp.GetId(), nil
 }
 
+// Register registers a new user, creates and returns a new token pair for the registered user.
 func (authService *AuthService) Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error) {
 	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
@@ -87,24 +91,21 @@ func (authService *AuthService) Register(ctx context.Context, registerModel publ
 	return tokenModel, nil
 }
 
+// Login authenticates a user, and if successful, creates and returns a new token pair for the user.
 func (authService *AuthService) Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error) {
-	// Create a token
 	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a gRPC client
 	client, err := authService.getGRPCClient()
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the token in the metadata
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	// Make a gRPC call to retrieve the user
 	identifierRequest := &pb.IdentifierRequest{
 		UserIdentifier: loginModel.Email,
 	}
@@ -114,13 +115,11 @@ func (authService *AuthService) Login(ctx context.Context, loginModel public_mod
 		return nil, err
 	}
 
-	// Compare the password
 	err = authService.Crypto.CompareHashAndPassword(user.GetHash(), loginModel.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a token pair
 	tokenModel, err := authService.TokenService.CreateTokenPair(ctx, user.GetId())
 	if err != nil {
 		return nil, err
