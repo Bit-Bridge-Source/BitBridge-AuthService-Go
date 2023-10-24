@@ -7,6 +7,7 @@ import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/proto/pb"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
+	common_listener "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/listener"
 	"google.golang.org/grpc"
 )
 
@@ -15,18 +16,13 @@ type IAuthGRPCServer interface {
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error)
 	Run() error
-	InitServer(port string, listener Listener) error
+	InitServer(port string, listener common_listener.Listener) error
 }
 
 // ServerConfig holds configuration for the server such as Listener and GRPCServer.
 type ServerConfig struct {
 	Listener   net.Listener
 	GRPCServer *grpc.Server
-}
-
-// Listener interface defines the Listen method for network connections.
-type Listener interface {
-	Listen(network, address string) (net.Listener, error)
 }
 
 // AuthGRPCServer is a struct that embeds the services and configurations needed for the authentication server.
@@ -38,7 +34,7 @@ type AuthGRPCServer struct {
 }
 
 // InitServer initializes the server with the given port and listener but doesn’t start it.
-func (s *AuthGRPCServer) InitServer(port string, listener Listener) error {
+func (s *AuthGRPCServer) InitServer(port string, listener common_listener.Listener) error {
 	lis, err := listener.Listen("tcp", port)
 	if err != nil {
 		return err
