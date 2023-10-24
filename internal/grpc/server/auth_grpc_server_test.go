@@ -1,4 +1,4 @@
-package grpcserver_test
+package grpc_server_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net"
 	"testing"
 
-	grpcserver "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/grpc"
+	grpc_server "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/grpc/server"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/proto/pb"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func (m *MockAuthService) Register(ctx context.Context, model *public_model.Regi
 }
 
 func TestAuthGRPCServer_InitServer_Success(t *testing.T) {
-	s := &grpcserver.AuthGRPCServer{}
+	s := &grpc_server.AuthGRPCServer{}
 	err := s.InitServer(":5000", &MockListener{})
 
 	assert.Nil(t, err)
@@ -49,7 +49,7 @@ func TestAuthGRPCServer_InitServer_Success(t *testing.T) {
 }
 
 func TestAuthGRPCServer_InitServer_Error(t *testing.T) {
-	s := &grpcserver.AuthGRPCServer{}
+	s := &grpc_server.AuthGRPCServer{}
 	err := s.InitServer(":5000", &MockListenerWithError{})
 
 	assert.NotNil(t, err)
@@ -60,8 +60,8 @@ func TestAuthGRPCServer_Run_Success(t *testing.T) {
 	lis, err := net.Listen("tcp", ":0") // :0 picks a random open port
 	assert.Nil(t, err)
 
-	s := &grpcserver.AuthGRPCServer{
-		Config: grpcserver.ServerConfig{
+	s := &grpc_server.AuthGRPCServer{
+		Config: grpc_server.ServerConfig{
 			Listener:   lis,
 			GRPCServer: grpc.NewServer(),
 		},
@@ -89,7 +89,7 @@ func TestAuthGRPCServer_Login_Success(t *testing.T) {
 		RefreshToken: "expected_refresh_token",
 	}, nil)
 
-	s := &grpcserver.AuthGRPCServer{AuthService: mockAuthService}
+	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
 
 	req := &pb.LoginRequest{
 		Email:    "test@test.com",
@@ -111,7 +111,7 @@ func TestAuthGRPCServer_Login_Error(t *testing.T) {
 	expectedError := fmt.Errorf("login failed")
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), expectedError)
 
-	s := &grpcserver.AuthGRPCServer{AuthService: mockAuthService}
+	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
 
 	req := &pb.LoginRequest{
 		Email:    "test@test.com",
@@ -135,7 +135,7 @@ func TestAuthGRPCServer_Register_Success(t *testing.T) {
 		RefreshToken: "expected_refresh_token",
 	}, nil)
 
-	s := &grpcserver.AuthGRPCServer{AuthService: mockAuthService}
+	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
 
 	req := &pb.RegisterRequest{
 		Email:    "test@test.com",
@@ -158,7 +158,7 @@ func TestAuthGRPCServer_Register_Error(t *testing.T) {
 	expectedError := fmt.Errorf("register failed")
 	mockAuthService.On("Register", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), expectedError)
 
-	s := &grpcserver.AuthGRPCServer{AuthService: mockAuthService}
+	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
 
 	req := &pb.RegisterRequest{
 		Email:    "test@test.com",
