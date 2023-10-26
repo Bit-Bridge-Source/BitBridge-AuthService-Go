@@ -6,3 +6,17 @@ import "time"
 type TimeSource interface {
 	Now() time.Time
 }
+
+type SystemTime struct{}
+
+func NewSystemTime() *SystemTime {
+	return &SystemTime{}
+}
+
+// Now implements TimeSource.
+func (*SystemTime) Now() time.Time {
+	return time.Now()
+}
+
+// Ensure SystemTime implements TimeSource.
+var _ TimeSource = (*SystemTime)(nil)

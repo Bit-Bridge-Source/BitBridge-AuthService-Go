@@ -167,7 +167,7 @@ func TestRegister_Success(t *testing.T) {
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
 
 	// Call method
-	registerModel := public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
+	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
 	result, err := authService.Register(context.Background(), registerModel)
 
 	// Assertions
@@ -199,7 +199,7 @@ func TestRegister_Connection_Failure(t *testing.T) {
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
 
 	// Call method
-	registerModel := public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
+	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
 	result, err := authService.Register(context.Background(), registerModel)
 
 	// Assertions
@@ -231,7 +231,7 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
 
-	registerModel := public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
+	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
 	result, err := authService.Register(context.Background(), registerModel)
 
 	assert.Error(t, err)
@@ -258,7 +258,7 @@ func TestRegister_CreateToken_Failure(t *testing.T) {
 
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("create token error"))
 
-	registerModel := public_model.RegisterModel{Email: "test@mail", Username: "test", Password: "password"}
+	registerModel := &public_model.RegisterModel{Email: "test@mail", Username: "test", Password: "password"}
 	result, err := authService.Register(context.Background(), registerModel)
 
 	assert.Error(t, err)
@@ -292,7 +292,7 @@ func TestRegister_CreateTokenPair_Failure(t *testing.T) {
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), errors.New("create token pair error"))
 
 	// Call method
-	registerModel := public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
+	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
 	result, err := authService.Register(context.Background(), registerModel)
 
 	// Assertions
@@ -333,7 +333,7 @@ func TestLogin_Success(t *testing.T) {
 	}, nil)
 
 	// Call method
-	loginModel := public_model.LoginModel{Email: "test@test.com", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@test.com", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions
@@ -363,7 +363,7 @@ func TestLogin_CreateToken_Failure(t *testing.T) {
 
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("create token error"))
 
-	loginModel := public_model.LoginModel{Email: "test@mail", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@mail", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	assert.Error(t, err)
@@ -393,7 +393,7 @@ func TestLogin_Connection_Failure(t *testing.T) {
 	mockGrpcConnector.On("Connect", "localhost:50051").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
 
 	// Call method
-	loginModel := public_model.LoginModel{Email: "test@mail.com", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions
@@ -429,7 +429,7 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return((*pb.UserResponse)(nil), errors.New("get private user error"))
 
 	// Call method
-	loginModel := public_model.LoginModel{Email: "test@mail.com", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions
@@ -470,7 +470,7 @@ func TestLogin_CompareHashAndPassword_Failure(t *testing.T) {
 	mockCrypto.On("CompareHashAndPassword", "hashed_password", "password").Return(errors.New("compare hash and password error"))
 
 	// Call method
-	loginModel := public_model.LoginModel{Email: "test@mail.com", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions
@@ -513,7 +513,7 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), errors.New("create token pair error"))
 
 	// Call method
-	loginModel := public_model.LoginModel{Email: "test@mail.com", Password: "password"}
+	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions

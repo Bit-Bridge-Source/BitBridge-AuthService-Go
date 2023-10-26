@@ -33,6 +33,14 @@ type AuthGRPCServer struct {
 	pb.UnimplementedAuthServiceServer                             // Embedding the unimplemented server for forward compatibility
 }
 
+// NewAuthGRPCServer is a constructor for creating an instance of AuthGRPCServer with necessary dependencies.
+func NewAuthGRPCServer(authService auth.IAuthService, middleware grpc.UnaryServerInterceptor) *AuthGRPCServer {
+	return &AuthGRPCServer{
+		AuthService: authService,
+		Middleware:  middleware,
+	}
+}
+
 // InitServer initializes the server with the given port and listener but doesn’t start it.
 func (s *AuthGRPCServer) InitServer(port string, listener common_listener.Listener) error {
 	lis, err := listener.Listen("tcp", port)

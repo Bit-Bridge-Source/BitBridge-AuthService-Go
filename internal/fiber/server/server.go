@@ -12,7 +12,7 @@ type FiberServer struct {
 
 func NewAuthFiberServer(config *fiber.Config, handler *fiber_handler.FiberServerHandler) *FiberServer {
 	fiberServer := &FiberServer{App: fiber.New(*config)}
-	fiberServer.setupRoutes(*handler)
+	fiberServer.setupRoutes(handler)
 	return fiberServer
 }
 
@@ -20,7 +20,7 @@ func (f *FiberServer) Run(port string) error {
 	return f.App.Listen(port)
 }
 
-func (f *FiberServer) setupRoutes(handler fiber_handler.FiberServerHandler) {
+func (f *FiberServer) setupRoutes(handler *fiber_handler.FiberServerHandler) {
 	f.App.Post("/login", func(c *fiber.Ctx) error {
 		fiberCtx := &fiber_util.FiberContextImpl{
 			Ctx: c,

@@ -52,7 +52,7 @@ func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
 }
 
 // createUser creates a new user by communicating with the user service.
-func (authService *AuthService) createUser(ctx context.Context, client pb.UserServiceClient, registerModel public_model.RegisterModel, token string) (string, error) {
+func (authService *AuthService) createUser(ctx context.Context, client pb.UserServiceClient, registerModel *public_model.RegisterModel, token string) (string, error) {
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	userCreate := &pb.CreateUserRequest{
@@ -68,7 +68,7 @@ func (authService *AuthService) createUser(ctx context.Context, client pb.UserSe
 }
 
 // Register registers a new user, creates and returns a new token pair for the registered user.
-func (authService *AuthService) Register(ctx context.Context, registerModel public_model.RegisterModel) (*public_model.TokenModel, error) {
+func (authService *AuthService) Register(ctx context.Context, registerModel *public_model.RegisterModel) (*public_model.TokenModel, error) {
 	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (authService *AuthService) Register(ctx context.Context, registerModel publ
 }
 
 // Login authenticates a user, and if successful, creates and returns a new token pair for the user.
-func (authService *AuthService) Login(ctx context.Context, loginModel public_model.LoginModel) (*public_model.TokenModel, error) {
+func (authService *AuthService) Login(ctx context.Context, loginModel *public_model.LoginModel) (*public_model.TokenModel, error) {
 	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
 	if err != nil {
 		return nil, err
@@ -128,3 +128,6 @@ func (authService *AuthService) Login(ctx context.Context, loginModel public_mod
 
 	return tokenModel, nil
 }
+
+// Ensure AuthService implements IAuthService.
+var _ IAuthService = (*AuthService)(nil)
