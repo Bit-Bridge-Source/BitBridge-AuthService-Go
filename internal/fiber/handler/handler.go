@@ -1,4 +1,4 @@
-package fiber_handler
+package handler
 
 import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"

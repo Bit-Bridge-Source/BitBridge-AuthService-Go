@@ -1,4 +1,4 @@
-package fiber_util
+package util
 
 import (
 	"context"

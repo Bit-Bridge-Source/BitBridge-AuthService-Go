@@ -1,4 +1,4 @@
-package fiber_handler_test
+package handler_test
 
 import (
 	"context"
