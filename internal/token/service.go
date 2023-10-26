@@ -1,10 +1,12 @@
-package service
+package token
 
 import (
 	"context"
 	"errors"
 	"time"
 
+	internal_jwt "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/jwt"
+	internal_time "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/time"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/golang-jwt/jwt"
 )
@@ -16,30 +18,17 @@ type ITokenService interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*public_model.TokenModel, error)
 }
 
-// TimeSource is an interface representing a source to get the current time.
-type TimeSource interface {
-	Now() time.Time
-}
-
-// JWTHandler defines methods to generate and parse JWT tokens.
-type JWTHandler interface {
-	Generate(claims jwt.Claims) (string, error)
-	Parse(tokenString string, claims jwt.Claims) (*jwt.Token, error)
-}
-
 // TokenService contains fields necessary for token operations.
 type TokenService struct {
-	JWTSecret []byte     // Secret key to sign the JWT tokens
-	Time      TimeSource // Source to get the current time
-	JWT       JWTHandler // Handler to manage JWT tokens
+	Time internal_time.TimeSource // Source to get the current time
+	JWT  internal_jwt.JWTHandler  // Handler to manage JWT tokens
 }
 
 // NewTokenService initializes a new TokenService with necessary dependencies.
-func NewTokenService(jwtSecret []byte, time TimeSource, jwt JWTHandler) *TokenService {
+func NewTokenService(time internal_time.TimeSource, jwt internal_jwt.JWTHandler) *TokenService {
 	return &TokenService{
-		JWTSecret: jwtSecret,
-		Time:      time,
-		JWT:       jwt,
+		Time: time,
+		JWT:  jwt,
 	}
 }
 

@@ -1,10 +1,10 @@
-package grpc_server
+package grpcserver
 
 import (
 	"context"
 	"net"
 
-	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/proto/pb"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_listener "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/listener"
@@ -27,10 +27,18 @@ type ServerConfig struct {
 
 // AuthGRPCServer is a struct that embeds the services and configurations needed for the authentication server.
 type AuthGRPCServer struct {
-	AuthService                       service.IAuthService        // Authentication service
+	AuthService                       auth.IAuthService           // Authentication service
 	Middleware                        grpc.UnaryServerInterceptor // Middleware for unary server interactions
 	Config                            ServerConfig                // Server configuration
 	pb.UnimplementedAuthServiceServer                             // Embedding the unimplemented server for forward compatibility
+}
+
+// NewAuthGRPCServer is a constructor for creating an instance of AuthGRPCServer with necessary dependencies.
+func NewAuthGRPCServer(authService auth.IAuthService, middleware grpc.UnaryServerInterceptor) *AuthGRPCServer {
+	return &AuthGRPCServer{
+		AuthService: authService,
+		Middleware:  middleware,
+	}
 }
 
 // InitServer initializes the server with the given port and listener but doesn’t start it.

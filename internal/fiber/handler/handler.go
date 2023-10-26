@@ -1,17 +1,17 @@
-package fiber_handler
+package handler
 
 import (
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"
 	fiber_util "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/util"
-	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/gofiber/fiber/v2"
 )
 
 type FiberServerHandler struct {
-	AuthService service.IAuthService
+	AuthService auth.IAuthService
 }
 
-func NewFiberServerHandler(authService service.IAuthService) *FiberServerHandler {
+func NewFiberServerHandler(authService auth.IAuthService) *FiberServerHandler {
 	return &FiberServerHandler{AuthService: authService}
 }
 
