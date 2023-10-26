@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"
 	fiber_handler "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/handler"
 	fiber_util "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/util"
-	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -29,7 +29,7 @@ func (m *MockAuthService) Register(ctx context.Context, registerModel *public_mo
 }
 
 // Ensure that MockAuthService implements IAuthService
-var _ service.IAuthService = &MockAuthService{}
+var _ auth.IAuthService = &MockAuthService{}
 
 type MockFiberContext struct {
 	mock.Mock

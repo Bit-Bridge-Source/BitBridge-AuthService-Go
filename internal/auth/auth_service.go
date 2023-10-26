@@ -1,9 +1,10 @@
-package service
+package auth
 
 import (
 	"context"
 	"time"
 
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
 	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
@@ -20,7 +21,7 @@ type IAuthService interface {
 
 // AuthService is the struct containing services and configurations for authentication.
 type AuthService struct {
-	TokenService             ITokenService                                    // Handles token creation and validation
+	TokenService             token.ITokenService                              // Handles token creation and validation
 	Crypto                   common_crypto.ICrypto                            // Handles cryptographic operations
 	GrpcConnector            grpc_connector.IGrpcConnector                    // Helps in connecting to other gRPC services
 	UserServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient // Factory function to create a new UserService client
@@ -28,7 +29,7 @@ type AuthService struct {
 
 // NewAuthService is a constructor for creating an instance of AuthService with necessary dependencies.
 func NewAuthService(
-	tokenService ITokenService,
+	tokenService token.ITokenService,
 	crypto common_crypto.ICrypto,
 	grpcConnector grpc_connector.IGrpcConnector,
 	userServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient,

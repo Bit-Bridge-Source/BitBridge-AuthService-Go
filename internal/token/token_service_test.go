@@ -1,11 +1,11 @@
-package service_test
+package token_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +35,7 @@ func (m *MockJWTHandler) Parse(tokenString string, claims jwt.Claims) (*jwt.Toke
 func TestCreateToken_Success(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	jwtHandler.On("Generate", mock.Anything).Return("mockToken", nil)
 
@@ -49,7 +49,7 @@ func TestCreateToken_Success(t *testing.T) {
 func TestCreateToken_Error(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	jwtHandler.On("Generate", mock.Anything).Return("", assert.AnError)
 
@@ -63,7 +63,7 @@ func TestCreateToken_Error(t *testing.T) {
 func TestCreateTokenPair_Success(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	jwtHandler.On("Generate", mock.Anything).Return("mockToken", nil).Twice()
 
@@ -84,7 +84,7 @@ func TestCreateTokenPair_Success(t *testing.T) {
 func TestCreateTokenPair_Error(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	jwtHandler.On("Generate", mock.Anything).Return("", assert.AnError).Once()
 
@@ -98,7 +98,7 @@ func TestCreateTokenPair_Error(t *testing.T) {
 func TestRefreshToken_Success(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	token := &jwt.Token{Valid: true}
 
@@ -124,7 +124,7 @@ func TestRefreshToken_Success(t *testing.T) {
 func TestRefreshToken_Error(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	jwtHandler.On("Parse", mock.Anything, mock.Anything).Return((*jwt.Token)(nil), assert.AnError)
 
@@ -138,7 +138,7 @@ func TestRefreshToken_Error(t *testing.T) {
 func TestRefreshToken_Invalid(t *testing.T) {
 	timeSource := &MockTimeSource{}
 	jwtHandler := new(MockJWTHandler)
-	svc := service.NewTokenService([]byte("secret"), timeSource, jwtHandler)
+	svc := token.NewTokenService(timeSource, jwtHandler)
 
 	token := &jwt.Token{}
 	jwtHandler.On("Parse", mock.Anything, mock.Anything).Return(token, nil)
@@ -153,7 +153,7 @@ func TestRefreshToken_Invalid(t *testing.T) {
 func TestCreateTokenPair_CreateTokenError_Generate(t *testing.T) {
 	mockJWTHandler := new(MockJWTHandler)
 	mockTimeSource := &MockTimeSource{}
-	svc := service.NewTokenService([]byte("secret"), mockTimeSource, mockJWTHandler)
+	svc := token.NewTokenService(mockTimeSource, mockJWTHandler)
 
 	// Mock Generate to return success for the first call and error for the second call
 	mockJWTHandler.On("Generate", mock.Anything).Return("mockToken", nil).Once()
@@ -168,7 +168,7 @@ func TestCreateTokenPair_CreateTokenError_Generate(t *testing.T) {
 func TestRefreshToken_CreateTokenPairError(t *testing.T) {
 	mockJWTHandler := new(MockJWTHandler)
 	mockTimeSource := &MockTimeSource{}
-	svc := service.NewTokenService([]byte("secret"), mockTimeSource, mockJWTHandler)
+	svc := token.NewTokenService(mockTimeSource, mockJWTHandler)
 
 	// Mock Parse to return a valid token
 	mockToken := &jwt.Token{Valid: true}

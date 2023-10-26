@@ -1,4 +1,4 @@
-package service_test
+package auth_test
 
 import (
 	"context"
@@ -6,7 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/service"
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"
+	internal_jwt "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/jwt"
+	internal_time "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/time"
+	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
 	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
@@ -41,7 +44,7 @@ func (m *MockTokenService) RefreshToken(ctx context.Context, refreshToken string
 }
 
 // Ensure that the mock implements the interface
-var _ service.ITokenService = (*MockTokenService)(nil)
+var _ token.ITokenService = (*MockTokenService)(nil)
 
 type MockCrypto struct {
 	mock.Mock
@@ -97,7 +100,7 @@ var _ pb.UserServiceClient = (*MockUserServiceClient)(nil)
 
 type MockAuthService struct {
 	mock.Mock
-	service.IAuthService
+	token.ITokenService
 }
 
 func (m *MockAuthService) CreateToken(ctx context.Context, userID string, expiration int64) (string, error) {
@@ -110,6 +113,37 @@ func (m *MockAuthService) CreateTokenPair(ctx context.Context, userID string) (*
 	return args.Get(0).(*public_model.TokenModel), args.Error(1)
 }
 
+type MockJWTHandler struct {
+	mock.Mock
+}
+
+// Generate implements jwt.JWTHandler.
+func (m *MockJWTHandler) Generate(claims jwt.Claims) (string, error) {
+	args := m.Called(claims)
+	return args.String(0), args.Error(1)
+}
+
+// Parse implements jwt.JWTHandler.
+func (m *MockJWTHandler) Parse(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
+	args := m.Called(tokenString, claims)
+	return args.Get(0).(*jwt.Token), args.Error(1)
+}
+
+// Ensure that the mock implements the interface
+var _ internal_jwt.JWTHandler = (*MockJWTHandler)(nil)
+
+type MockTimeSource struct {
+	mock.Mock
+}
+
+// Now implements time.TimeSource.
+func (*MockTimeSource) Now() time.Time {
+	return time.Now()
+}
+
+// Ensure that the mock implements the interface
+var _ internal_time.TimeSource = (*MockTimeSource)(nil)
+
 func TestRegister_Success(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
@@ -117,7 +151,7 @@ func TestRegister_Success(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -152,7 +186,7 @@ func TestRegister_Connection_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -185,7 +219,7 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -215,7 +249,7 @@ func TestRegister_CreateToken_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -242,7 +276,7 @@ func TestRegister_CreateTokenPair_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -278,7 +312,7 @@ func TestLogin_Success(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -320,7 +354,7 @@ func TestLogin_CreateToken_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -347,7 +381,7 @@ func TestLogin_Connection_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -380,7 +414,7 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -417,7 +451,7 @@ func TestLogin_CompareHashAndPassword_Failure(t *testing.T) {
 	mockUserServiceClient := new(MockUserServiceClient)
 	mockAuthService := new(MockAuthService)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -459,7 +493,7 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 	mockUserServiceClient := new(MockUserServiceClient)
 	mockAuthService := new(MockAuthService)
 
-	authService := service.NewAuthService(
+	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
 		mockGrpcConnector,
@@ -497,7 +531,7 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 func TestRefreshToken_Success_(t *testing.T) {
 	mockJWTHandler := new(MockJWTHandler)
 	mockTimeSource := &MockTimeSource{}
-	svc := service.NewTokenService([]byte("secret"), mockTimeSource, mockJWTHandler)
+	svc := token.NewTokenService(mockTimeSource, mockJWTHandler)
 
 	// Mock Parse method since RefreshToken will call it
 	mockJWTHandler.On("Parse", "someValidRefreshToken", mock.Anything).Return(&jwt.Token{Valid: true}, nil)
