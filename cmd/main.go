@@ -20,14 +20,18 @@ import (
 
 func main() {
 
+	grpcConnector := &grpc_connector.GrpcConnector{}
+	grpcUserConnection, err := grpcConnector.Connect("localhost:3001")
+	if err != nil {
+		panic(err)
+	}
+
+	grpUserClient := pb.NewUserServiceClient(grpcUserConnection)
 	jwtHandler := jwt.NewSimpleJWTHandler([]byte("secret"))
 	tokenService := token.NewTokenService(time.NewSystemTime(), jwtHandler)
 	cryptoService := common_crypto.NewCrypto()
-	grpcConnector := &grpc_connector.GrpcConnector{}
 
-	authService := auth.NewAuthService(tokenService, cryptoService, grpcConnector, func(conn *grpc.ClientConn) pb.UserServiceClient {
-		return pb.NewUserServiceClient(conn)
-	})
+	authService := auth.NewAuthService(tokenService, cryptoService, grpUserClient)
 
 	fiberHandler := fiber_handler.NewFiberServerHandler(authService)
 	fiberServer := fiber_server.NewAuthFiberServer(&fiber.Config{}, fiberHandler)
