@@ -148,18 +148,15 @@ func TestRegister_Success(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return(&pb.PublicUserResponse{
 		Id: "test",
 	}, nil)
@@ -175,40 +172,6 @@ func TestRegister_Success(t *testing.T) {
 	assert.NotNil(t, result)
 
 	// Verify that expected methods were called
-	mockGrpcConnector.AssertExpectations(t)
-	mockUserServiceClient.AssertExpectations(t)
-}
-
-func TestRegister_Connection_Failure(t *testing.T) {
-	// Setup mocks
-	mockTokenService := new(MockTokenService)
-	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
-	mockUserServiceClient := new(MockUserServiceClient)
-
-	authService := auth.NewAuthService(
-		mockTokenService,
-		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
-	)
-
-	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:3001").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
-	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
-
-	// Call method
-	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
-	result, err := authService.Register(context.Background(), registerModel)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "connection error", err.Error())
-
-	// Verify that expected methods were called
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -216,17 +179,14 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return((*pb.PublicUserResponse)(nil), errors.New("create user error"))
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
@@ -238,7 +198,6 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Equal(t, "create user error", err.Error())
 
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -246,14 +205,12 @@ func TestRegister_CreateToken_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("create token error"))
@@ -265,7 +222,6 @@ func TestRegister_CreateToken_Failure(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Equal(t, "create token error", err.Error())
 
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -273,18 +229,15 @@ func TestRegister_CreateTokenPair_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return(&pb.PublicUserResponse{
 		Id: "test",
 	}, nil)
@@ -301,7 +254,6 @@ func TestRegister_CreateTokenPair_Failure(t *testing.T) {
 	assert.Equal(t, "create token pair error", err.Error())
 
 	// Verify that expected methods were called
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -309,19 +261,16 @@ func TestLogin_Success(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",
@@ -343,7 +292,6 @@ func TestLogin_Success(t *testing.T) {
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)
 	mockCrypto.AssertExpectations(t)
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -351,14 +299,12 @@ func TestLogin_CreateToken_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("create token error"))
@@ -370,7 +316,6 @@ func TestLogin_CreateToken_Failure(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Equal(t, "create token error", err.Error())
 
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -378,19 +323,17 @@ func TestLogin_Connection_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:3001").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
+	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return((*pb.UserResponse)(nil), errors.New("connection error"))
 
 	// Call method
 	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
@@ -403,7 +346,6 @@ func TestLogin_Connection_Failure(t *testing.T) {
 
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -411,21 +353,16 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient {
-			return mockUserServiceClient
-		},
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return((*pb.UserResponse)(nil), errors.New("get private user error"))
 
 	// Call method
@@ -439,7 +376,6 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 }
 
@@ -447,22 +383,17 @@ func TestLogin_CompareHashAndPassword_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 	mockAuthService := new(MockAuthService)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient {
-			return mockUserServiceClient
-		},
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",
@@ -480,7 +411,6 @@ func TestLogin_CompareHashAndPassword_Failure(t *testing.T) {
 
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 	mockAuthService.AssertExpectations(t)
 }
@@ -489,22 +419,17 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
-	mockGrpcConnector := new(MockGrpcConnector)
 	mockUserServiceClient := new(MockUserServiceClient)
 	mockAuthService := new(MockAuthService)
 
 	authService := auth.NewAuthService(
 		mockTokenService,
 		mockCrypto,
-		mockGrpcConnector,
-		func(conn *grpc.ClientConn) pb.UserServiceClient {
-			return mockUserServiceClient
-		},
+		mockUserServiceClient,
 	)
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",
@@ -523,7 +448,6 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)
-	mockGrpcConnector.AssertExpectations(t)
 	mockUserServiceClient.AssertExpectations(t)
 	mockAuthService.AssertExpectations(t)
 }

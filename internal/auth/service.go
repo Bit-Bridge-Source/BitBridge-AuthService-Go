@@ -7,9 +7,7 @@ import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
-	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 	"github.com/Bit-Bridge-Source/BitBridge-UserService-Go/proto/pb"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -21,38 +19,26 @@ type IAuthService interface {
 
 // AuthService is the struct containing services and configurations for authentication.
 type AuthService struct {
-	TokenService             token.ITokenService                              // Handles token creation and validation
-	Crypto                   common_crypto.ICrypto                            // Handles cryptographic operations
-	GrpcConnector            grpc_connector.IGrpcConnector                    // Helps in connecting to other gRPC services
-	UserServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient // Factory function to create a new UserService client
+	TokenService      token.ITokenService   // Handles token creation and validation
+	Crypto            common_crypto.ICrypto // Handles cryptographic operations
+	UserServiceClient pb.UserServiceClient  // Factory function to create a new UserService client
 }
 
 // NewAuthService is a constructor for creating an instance of AuthService with necessary dependencies.
 func NewAuthService(
 	tokenService token.ITokenService,
 	crypto common_crypto.ICrypto,
-	grpcConnector grpc_connector.IGrpcConnector,
-	userServiceClientCreator func(conn *grpc.ClientConn) pb.UserServiceClient,
+	userServiceClient pb.UserServiceClient,
 ) *AuthService {
 	return &AuthService{
-		TokenService:             tokenService,
-		Crypto:                   crypto,
-		GrpcConnector:            grpcConnector,
-		UserServiceClientCreator: userServiceClientCreator,
+		TokenService:      tokenService,
+		Crypto:            crypto,
+		UserServiceClient: userServiceClient,
 	}
-}
-
-// getGRPCClient creates and returns a new UserServiceClient for interacting with the user service.
-func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
-	connection, err := authService.GrpcConnector.Connect("localhost:3001")
-	if err != nil {
-		return nil, err
-	}
-	return authService.UserServiceClientCreator(connection), nil
 }
 
 // createUser creates a new user by communicating with the user service.
-func (authService *AuthService) createUser(ctx context.Context, client pb.UserServiceClient, registerModel *public_model.RegisterModel, token string) (string, error) {
+func (authService *AuthService) createUser(ctx context.Context, registerModel *public_model.RegisterModel, token string) (string, error) {
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	userCreate := &pb.CreateUserRequest{
@@ -60,7 +46,7 @@ func (authService *AuthService) createUser(ctx context.Context, client pb.UserSe
 		Username: registerModel.Username,
 		Password: registerModel.Password,
 	}
-	resp, err := client.CreateUser(ctx, userCreate)
+	resp, err := authService.UserServiceClient.CreateUser(ctx, userCreate)
 	if err != nil {
 		return "", err
 	}
@@ -74,12 +60,7 @@ func (authService *AuthService) Register(ctx context.Context, registerModel *pub
 		return nil, err
 	}
 
-	client, err := authService.getGRPCClient()
-	if err != nil {
-		return nil, err
-	}
-
-	userID, err := authService.createUser(ctx, client, registerModel, token)
+	userID, err := authService.createUser(ctx, registerModel, token)
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +80,6 @@ func (authService *AuthService) Login(ctx context.Context, loginModel *public_mo
 		return nil, err
 	}
 
-	client, err := authService.getGRPCClient()
-	if err != nil {
-		return nil, err
-	}
-
 	md := metadata.Pairs("Authorization", "Bearer "+token)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
@@ -111,7 +87,7 @@ func (authService *AuthService) Login(ctx context.Context, loginModel *public_mo
 		UserIdentifier: loginModel.Email,
 	}
 
-	user, err := client.GetPrivateUserByIdentifier(ctx, identifierRequest)
+	user, err := authService.UserServiceClient.GetPrivateUserByIdentifier(ctx, identifierRequest)
 	if err != nil {
 		return nil, err
 	}
