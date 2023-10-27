@@ -111,7 +111,9 @@ func TestAuthGRPCServer_Login_Error(t *testing.T) {
 	expectedError := fmt.Errorf("login failed")
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), expectedError)
 
-	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return handler(ctx, req)
+	})
 
 	req := &pb.LoginRequest{
 		Email:    "test@test.com",
