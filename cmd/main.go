@@ -37,5 +37,5 @@ func main() {
 	})
 
 	app := app.NewApp(fiberServer, grpcServer)
-	app.Run(":3000", ":3001")
+	app.Run(":3002", ":3003")
 }

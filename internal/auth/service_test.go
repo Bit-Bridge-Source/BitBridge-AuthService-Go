@@ -159,7 +159,7 @@ func TestRegister_Success(t *testing.T) {
 	)
 
 	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return(&pb.PublicUserResponse{
 		Id: "test",
 	}, nil)
@@ -194,7 +194,7 @@ func TestRegister_Connection_Failure(t *testing.T) {
 	)
 
 	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:50051").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
+	mockGrpcConnector.On("Connect", "localhost:3001").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
 
@@ -226,7 +226,7 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 		func(conn *grpc.ClientConn) pb.UserServiceClient { return mockUserServiceClient },
 	)
 
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return((*pb.PublicUserResponse)(nil), errors.New("create user error"))
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
@@ -284,7 +284,7 @@ func TestRegister_CreateTokenPair_Failure(t *testing.T) {
 	)
 
 	// Setup expectations
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return(&pb.PublicUserResponse{
 		Id: "test",
 	}, nil)
@@ -321,7 +321,7 @@ func TestLogin_Success(t *testing.T) {
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",
@@ -390,7 +390,7 @@ func TestLogin_Connection_Failure(t *testing.T) {
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:50051").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
+	mockGrpcConnector.On("Connect", "localhost:3001").Return((*grpc.ClientConn)(nil), errors.New("connection error"))
 
 	// Call method
 	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
@@ -425,7 +425,7 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return((*pb.UserResponse)(nil), errors.New("get private user error"))
 
 	// Call method
@@ -462,7 +462,7 @@ func TestLogin_CompareHashAndPassword_Failure(t *testing.T) {
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",
@@ -504,7 +504,7 @@ func TestLogin_CreateTokenPair_Failure(t *testing.T) {
 
 	// Setup expectations
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockGrpcConnector.On("Connect", "localhost:50051").Return(&grpc.ClientConn{}, nil)
+	mockGrpcConnector.On("Connect", "localhost:3001").Return(&grpc.ClientConn{}, nil)
 	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return(&pb.UserResponse{
 		Id:   "test",
 		Hash: "hashed_password",

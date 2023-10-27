@@ -44,7 +44,7 @@ func NewAuthService(
 
 // getGRPCClient creates and returns a new UserServiceClient for interacting with the user service.
 func (authService *AuthService) getGRPCClient() (pb.UserServiceClient, error) {
-	connection, err := authService.GrpcConnector.Connect("localhost:50051")
+	connection, err := authService.GrpcConnector.Connect("localhost:3001")
 	if err != nil {
 		return nil, err
 	}
