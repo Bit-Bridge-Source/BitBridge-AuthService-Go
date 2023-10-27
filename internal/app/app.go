@@ -30,8 +30,16 @@ func (app *App) Run(httpPort string, gRPCPort string) {
 
 	// Run gRPC server
 	go func() {
-		grpcErrChan <- app.GRPCServer.InitServer(gRPCPort, &common_listener.DefaultListener{})
-		grpcErrChan <- app.GRPCServer.Run()
+		err := app.GRPCServer.InitServer(gRPCPort, &common_listener.DefaultListener{})
+		if err != nil {
+			grpcErrChan <- err
+			return
+		}
+
+		err = app.GRPCServer.Run()
+		if err != nil {
+			grpcErrChan <- err
+		}
 	}()
 
 	// Wait for errors from the servers
