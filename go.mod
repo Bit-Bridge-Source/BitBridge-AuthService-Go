@@ -3,8 +3,8 @@ module github.com/Bit-Bridge-Source/BitBridge-AuthService-Go
 go 1.21.0
 
 require (
-	github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.0.5
-	github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231014140239-bdcad663cc9c
+	github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.0.6
+	github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231027195006-076299aec6a7
 	github.com/gofiber/fiber/v2 v2.50.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/stretchr/testify v1.8.4
@@ -16,7 +16,7 @@ require (
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -31,6 +31,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
+	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
