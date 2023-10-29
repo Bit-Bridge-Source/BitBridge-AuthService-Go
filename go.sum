@@ -1,3 +1,5 @@
+github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.10.4 h1:Bl5JfQeZrbDQfEqNK/o7tNCJZTwdvMPhvgEe781VMtE=
+github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.10.4/go.mod h1:vRgNE1eqlRqQ5PfhvYJjNkPV86CpXNjj8VKGwXTqbSY=
 github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231029164151-b6ded386dbf9 h1:CVSsKEY6uJsO7kh/ARGj8s3yU28me2sBvSqyljg0kjQ=
 github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231029164151-b6ded386dbf9/go.mod h1:YmtWTVDcKfgLQzEWZhndyNMqArs5avbED7D7VNXaZsI=
 github.com/andybalholm/brotli v1.0.6 h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=

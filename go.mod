@@ -58,5 +58,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/Bit-Bridge-Source/BitBridge-CommonService-Go => ../common-service
