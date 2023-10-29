@@ -12,12 +12,14 @@ import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
+	common_error "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/error"
 	grpc_connector "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 	"github.com/Bit-Bridge-Source/BitBridge-UserService-Go/proto/pb"
 	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 // Mocks
@@ -175,7 +177,7 @@ func TestRegister_Success(t *testing.T) {
 	mockUserServiceClient.AssertExpectations(t)
 }
 
-func TestRegister_CreateUser_Failure(t *testing.T) {
+func TestRegister_CreateUser_Failure_Unknown_Error(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
 	mockCrypto := new(MockCrypto)
@@ -188,6 +190,32 @@ func TestRegister_CreateUser_Failure(t *testing.T) {
 	)
 
 	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return((*pb.PublicUserResponse)(nil), errors.New("create user error"))
+	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
+	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
+
+	registerModel := &public_model.RegisterModel{Email: "test@test.com", Username: "test", Password: "password"}
+	result, err := authService.Register(context.Background(), registerModel)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, "create user error", err.Error())
+
+	mockUserServiceClient.AssertExpectations(t)
+}
+
+func TestRegister_CreateUser_Failure_Known_Error(t *testing.T) {
+	// Setup mocks
+	mockTokenService := new(MockTokenService)
+	mockCrypto := new(MockCrypto)
+	mockUserServiceClient := new(MockUserServiceClient)
+
+	authService := auth.NewAuthService(
+		mockTokenService,
+		mockCrypto,
+		mockUserServiceClient,
+	)
+
+	mockUserServiceClient.On("CreateUser", mock.Anything, mock.Anything).Return((*pb.PublicUserResponse)(nil), status.Errorf(400, "create user error"))
 	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
 	mockTokenService.On("CreateTokenPair", mock.Anything, mock.Anything).Return(&public_model.TokenModel{AccessToken: "mocked_access_token", RefreshToken: "mocked_refresh_token"}, nil)
 
@@ -319,36 +347,6 @@ func TestLogin_CreateToken_Failure(t *testing.T) {
 	mockUserServiceClient.AssertExpectations(t)
 }
 
-func TestLogin_Connection_Failure(t *testing.T) {
-	// Setup mocks
-	mockTokenService := new(MockTokenService)
-	mockCrypto := new(MockCrypto)
-	mockUserServiceClient := new(MockUserServiceClient)
-
-	authService := auth.NewAuthService(
-		mockTokenService,
-		mockCrypto,
-		mockUserServiceClient,
-	)
-
-	// Setup expectations
-	mockTokenService.On("CreateToken", mock.Anything, mock.Anything, mock.Anything).Return("mocked_token", nil)
-	mockUserServiceClient.On("GetPrivateUserByIdentifier", mock.Anything, mock.Anything).Return((*pb.UserResponse)(nil), errors.New("connection error"))
-
-	// Call method
-	loginModel := &public_model.LoginModel{Email: "test@mail.com", Password: "password"}
-	result, err := authService.Login(context.Background(), loginModel)
-
-	// Assertions
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "connection error", err.Error())
-
-	// Verify that expected methods were called
-	mockTokenService.AssertExpectations(t)
-	mockUserServiceClient.AssertExpectations(t)
-}
-
 func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 	// Setup mocks
 	mockTokenService := new(MockTokenService)
@@ -370,9 +368,13 @@ func TestLogin_GetPrivateUserByIdentifier_Failure(t *testing.T) {
 	result, err := authService.Login(context.Background(), loginModel)
 
 	// Assertions
-	assert.Error(t, err)
+	// Check error type
+	serverError, ok := err.(*common_error.ServiceError)
+
+	assert.True(t, ok)
+	assert.Equal(t, common_error.Unauthorized, serverError.Code)
+	assert.Equal(t, "Invalid credentials", serverError.Message)
 	assert.Nil(t, result)
-	assert.Equal(t, "get private user error", err.Error())
 
 	// Verify that expected methods were called
 	mockTokenService.AssertExpectations(t)

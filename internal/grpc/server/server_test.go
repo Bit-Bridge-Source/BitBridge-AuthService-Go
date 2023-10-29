@@ -41,7 +41,8 @@ func (m *MockAuthService) Register(ctx context.Context, model *public_model.Regi
 }
 
 func TestAuthGRPCServer_InitServer_Success(t *testing.T) {
-	s := &grpc_server.AuthGRPCServer{}
+	mockAuthService := new(MockAuthService)
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 	err := s.InitServer(":5000", &MockListener{})
 
 	assert.Nil(t, err)
@@ -49,7 +50,8 @@ func TestAuthGRPCServer_InitServer_Success(t *testing.T) {
 }
 
 func TestAuthGRPCServer_InitServer_Error(t *testing.T) {
-	s := &grpc_server.AuthGRPCServer{}
+	mockAuthService := new(MockAuthService)
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 	err := s.InitServer(":5000", &MockListenerWithError{})
 
 	assert.NotNil(t, err)
@@ -89,7 +91,7 @@ func TestAuthGRPCServer_Login_Success(t *testing.T) {
 		RefreshToken: "expected_refresh_token",
 	}, nil)
 
-	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 
 	req := &pb.LoginRequest{
 		Email:    "test@test.com",
@@ -111,9 +113,7 @@ func TestAuthGRPCServer_Login_Error(t *testing.T) {
 	expectedError := fmt.Errorf("login failed")
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), expectedError)
 
-	s := grpc_server.NewAuthGRPCServer(mockAuthService, func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return handler(ctx, req)
-	})
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 
 	req := &pb.LoginRequest{
 		Email:    "test@test.com",
@@ -137,7 +137,7 @@ func TestAuthGRPCServer_Register_Success(t *testing.T) {
 		RefreshToken: "expected_refresh_token",
 	}, nil)
 
-	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 
 	req := &pb.RegisterRequest{
 		Email:    "test@test.com",
@@ -160,7 +160,7 @@ func TestAuthGRPCServer_Register_Error(t *testing.T) {
 	expectedError := fmt.Errorf("register failed")
 	mockAuthService.On("Register", mock.Anything, mock.Anything).Return((*public_model.TokenModel)(nil), expectedError)
 
-	s := &grpc_server.AuthGRPCServer{AuthService: mockAuthService}
+	s := grpc_server.NewAuthGRPCServer(mockAuthService, []grpc.UnaryServerInterceptor{})
 
 	req := &pb.RegisterRequest{
 		Email:    "test@test.com",
