@@ -3,8 +3,8 @@ module github.com/Bit-Bridge-Source/BitBridge-AuthService-Go
 go 1.21.0
 
 require (
-	github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.0.6
-	github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231027195006-076299aec6a7
+	github.com/Bit-Bridge-Source/BitBridge-CommonService-Go v1.10.4
+	github.com/Bit-Bridge-Source/BitBridge-UserService-Go v0.0.0-20231029164151-b6ded386dbf9
 	github.com/gofiber/fiber/v2 v2.50.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/stretchr/testify v1.8.4
@@ -25,7 +25,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.7 // indirect
+	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.8 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.5 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
