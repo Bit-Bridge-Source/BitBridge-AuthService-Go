@@ -7,7 +7,7 @@ import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/auth"
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/proto/pb"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
-	common_listener "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/listener"
+	common_grpc "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -16,7 +16,7 @@ type IAuthGRPCServer interface {
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error)
 	Run() error
-	InitServer(port string, listener common_listener.Listener) error
+	InitServer(port string, listener common_grpc.Listener) error
 }
 
 // ServerConfig holds configuration for the server such as Listener and GRPCServer.
@@ -27,29 +27,29 @@ type ServerConfig struct {
 
 // AuthGRPCServer is a struct that embeds the services and configurations needed for the authentication server.
 type AuthGRPCServer struct {
-	AuthService                       auth.IAuthService           // Authentication service
-	Middleware                        grpc.UnaryServerInterceptor // Middleware for unary server interactions
-	Config                            ServerConfig                // Server configuration
-	pb.UnimplementedAuthServiceServer                             // Embedding the unimplemented server for forward compatibility
+	AuthService                       auth.IAuthService             // Authentication service
+	Interceptors                      []grpc.UnaryServerInterceptor // Interceptors for the GRPC server
+	Config                            ServerConfig                  // Server configuration
+	pb.UnimplementedAuthServiceServer                               // Embedding the unimplemented server for forward compatibility
 }
 
 // NewAuthGRPCServer is a constructor for creating an instance of AuthGRPCServer with necessary dependencies.
-func NewAuthGRPCServer(authService auth.IAuthService, middleware grpc.UnaryServerInterceptor) *AuthGRPCServer {
+func NewAuthGRPCServer(authService auth.IAuthService, interceptors []grpc.UnaryServerInterceptor) *AuthGRPCServer {
 	return &AuthGRPCServer{
-		AuthService: authService,
-		Middleware:  middleware,
+		AuthService:  authService,
+		Interceptors: interceptors,
 	}
 }
 
 // InitServer initializes the server with the given port and listener but doesn’t start it.
-func (s *AuthGRPCServer) InitServer(port string, listener common_listener.Listener) error {
+func (s *AuthGRPCServer) InitServer(port string, listener common_grpc.Listener) error {
 	lis, err := listener.Listen("tcp", port)
 	if err != nil {
 		return err
 	}
 	s.Config.Listener = lis
 	s.Config.GRPCServer = grpc.NewServer(
-		grpc.UnaryInterceptor(s.Middleware),
+		grpc.UnaryInterceptor(common_grpc.ChainUnaryInterceptors(s.Interceptors...)),
 	)
 	pb.RegisterAuthServiceServer(s.Config.GRPCServer, s)
 	return nil

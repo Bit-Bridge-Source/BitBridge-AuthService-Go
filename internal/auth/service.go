@@ -7,8 +7,10 @@ import (
 	"github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/token"
 	public_model "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/public/model"
 	common_crypto "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/crypto"
+	common_error "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/error"
 	"github.com/Bit-Bridge-Source/BitBridge-UserService-Go/proto/pb"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // IAuthService defines methods for user authentication services.
@@ -55,14 +57,19 @@ func (authService *AuthService) createUser(ctx context.Context, registerModel *p
 
 // Register registers a new user, creates and returns a new token pair for the registered user.
 func (authService *AuthService) Register(ctx context.Context, registerModel *public_model.RegisterModel) (*public_model.TokenModel, error) {
-	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Minute*15)
 	if err != nil {
 		return nil, err
 	}
 
 	userID, err := authService.createUser(ctx, registerModel, token)
 	if err != nil {
-		return nil, err
+		// Repackage the error with the correct error code and message
+		st, ok := status.FromError(err)
+		if !ok {
+			return nil, err
+		}
+		return nil, common_error.NewServiceError(int(st.Code()), st.Message(), err)
 	}
 
 	tokenModel, err := authService.TokenService.CreateTokenPair(ctx, userID)
@@ -75,7 +82,7 @@ func (authService *AuthService) Register(ctx context.Context, registerModel *pub
 
 // Login authenticates a user, and if successful, creates and returns a new token pair for the user.
 func (authService *AuthService) Login(ctx context.Context, loginModel *public_model.LoginModel) (*public_model.TokenModel, error) {
-	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Duration(time.Now().Add(time.Minute*15).Unix()))
+	token, err := authService.TokenService.CreateToken(ctx, "-1", time.Minute*15)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +96,7 @@ func (authService *AuthService) Login(ctx context.Context, loginModel *public_mo
 
 	user, err := authService.UserServiceClient.GetPrivateUserByIdentifier(ctx, identifierRequest)
 	if err != nil {
-		return nil, err
+		return nil, common_error.NewServiceError(common_error.Unauthorized, "Invalid credentials", err)
 	}
 
 	err = authService.Crypto.CompareHashAndPassword(user.GetHash(), loginModel.Password)

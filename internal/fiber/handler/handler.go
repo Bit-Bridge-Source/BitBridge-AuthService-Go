@@ -23,7 +23,7 @@ func (f *FiberServerHandler) Login(c fiber_util.FiberContext) error {
 
 	token, err := f.AuthService.Login(c.Context(), &loginModel)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return err
 	}
 
 	return c.JSON(token)
@@ -37,7 +37,7 @@ func (f *FiberServerHandler) Register(c fiber_util.FiberContext) error {
 
 	token, err := f.AuthService.Register(c.Context(), &registerModel)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		return err
 	}
 
 	return c.JSON(token)

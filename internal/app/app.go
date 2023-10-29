@@ -3,7 +3,7 @@ package app
 import (
 	fiber_server "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/fiber/server"
 	grpc_server "github.com/Bit-Bridge-Source/BitBridge-AuthService-Go/internal/grpc/server"
-	common_listener "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/listener"
+	common_listener "github.com/Bit-Bridge-Source/BitBridge-CommonService-Go/public/grpc"
 )
 
 type App struct {
