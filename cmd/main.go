@@ -20,7 +20,7 @@ import (
 
 func main() {
 	// Initialize vault client and read secret for authentication
-	vaultClient, err := common_vault.NewVault("http://localhost:8200", "XZ5!Ojk88#Ox8PoM!yZhiJfHs")
+	vaultClient, err := common_vault.NewVault("http://127.0.0.1:8200", "XZ5!Ojk88#Ox8PoM!yZhiJfHs")
 	if err != nil {
 		panic(err)
 	}
